@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: urlshorten-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-urluser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-urlpass}
+      POSTGRES_DB: ${POSTGRES_DB:-urlshorten}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./migrations/001_init.up.sql:/docker-entrypoint-initdb.d/001_init.sql
+
+volumes:
+  pgdata:
