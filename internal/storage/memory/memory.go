@@ -13,14 +13,12 @@ type MemoryStorage struct {
 	byOriginal map[string]model.URL // original → URL
 }
 
-
 func NewMemoryStorage() *MemoryStorage {
-    return &MemoryStorage{
-        byShort:    make(map[string]model.URL),
-        byOriginal: make(map[string]model.URL),
-    }
+	return &MemoryStorage{
+		byShort:    make(map[string]model.URL),
+		byOriginal: make(map[string]model.URL),
+	}
 }
-
 
 func (s *MemoryStorage) Save(ctx context.Context, url model.URL) error {
 	s.mu.Lock()
@@ -31,19 +29,18 @@ func (s *MemoryStorage) Save(ctx context.Context, url model.URL) error {
 	if ok {
 		return model.ErrAlreadyExists
 	}
-	
+
 	_, ok = s.byShort[url.ShortURL]
 
 	if ok {
 		return model.ErrAlreadyExists
 	}
 
-    s.byOriginal[url.OriginalURL] = url
-    s.byShort[url.ShortURL] = url
+	s.byOriginal[url.OriginalURL] = url
+	s.byShort[url.ShortURL] = url
 
 	return nil
 }
-
 
 func (s *MemoryStorage) GetByShort(ctx context.Context, short string) (model.URL, error) {
 	s.mu.RLock()

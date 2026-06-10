@@ -62,7 +62,7 @@ func main() {
 	mux.HandleFunc("POST /api/shorten", h.ShortenByOriginal)
 	mux.HandleFunc("GET /api/{short}", h.OriginalByShort)
 
-	appHandler := middelware.RequestID(middelware.Logger(middelware.Recovery(mux)))
+	appHandler := middleware.RequestID(middleware.Logger(middleware.Recovery(mux)))
 
 	// 5. Сервер
 	srv := &http.Server{
