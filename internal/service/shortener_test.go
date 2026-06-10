@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"sync"
 	"testing"
 
 	"github.com/armbdevelop/urlshorten/internal/model"
@@ -124,6 +125,43 @@ func TestShorten_Unit_SaveOK(t *testing.T) {
 	}
 	if len(short) != 10 {
 		t.Errorf("want len 10, got %d", len(short))
+	}
+}
+
+func TestShorten_ConcurrentDuplicate(t *testing.T) {
+	ctx := context.Background()
+	repo := memory.NewMemoryStorage()
+	svc := NewShortenerService(repo)
+
+	var wg sync.WaitGroup
+	results := make([]string, 50)
+	errors := make([]error, 50)
+
+	for i := 0; i < 50; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			short, err := svc.Shorten(ctx, "https://concurrent.com")
+			results[idx] = short
+			errors[idx] = err
+		}(i)
+	}
+
+	wg.Wait()
+
+	// проверяем что нет ошибок
+	for i, err := range errors {
+		if err != nil {
+			t.Fatalf("goroutine %d: unexpected error: %v", i, err)
+		}
+	}
+
+	// проверяем что все получили один и тот же short
+	first := results[0]
+	for i, short := range results {
+		if short != first {
+			t.Fatalf("goroutine %d: want %s, got %s", i, first, short)
+		}
 	}
 }
 
