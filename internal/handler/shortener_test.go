@@ -55,7 +55,7 @@ func TestShorten_InvalidJSON(t *testing.T) {
 
 	// Assert
 	if rr.Code != http.StatusBadRequest {
-		t.Errorf("want %d, got %d", http.StatusCreated, rr.Code)
+		t.Errorf("want %d, got %d", http.StatusBadRequest, rr.Code)
 	}
 }
 
@@ -74,7 +74,7 @@ func TestShorten_EmptyURL(t *testing.T) {
 
 	// Assert
 	if rr.Code != http.StatusBadRequest {
-		t.Errorf("unexpected error: %v, %v", http.StatusCreated, rr.Code)
+		t.Errorf("want %d, got %d", http.StatusBadRequest, rr.Code)
 	}
 }
 

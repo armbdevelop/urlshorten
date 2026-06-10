@@ -78,3 +78,7 @@ func (p *PostgresStorage) GetByOriginal(ctx context.Context, original string) (m
 
 	return url, nil
 }
+
+func (p *PostgresStorage) Close() {
+	p.pool.Close()
+}

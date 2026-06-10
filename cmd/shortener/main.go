@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/armbdevelop/urlshorten/internal/handler"
@@ -29,6 +32,7 @@ func main() {
 
 	var repo storage.Repository
 	var err error
+	var pgRepo *postgres.PostgresStorage
 
 	switch *storageType {
 	case "memory":
@@ -38,10 +42,11 @@ func main() {
 		if connStr == "" {
 			log.Fatal("DATABASE_URL is not set")
 		}
-		repo, err = postgres.NewPostgresStorage(connStr)
+		pgRepo, err = postgres.NewPostgresStorage(connStr)
 		if err != nil {
 			log.Fatal(err)
 		}
+		repo = pgRepo
 	default:
 		log.Fatalf("unknown storage: %s", *storageType)
 	}
@@ -68,9 +73,31 @@ func main() {
 		IdleTimeout:  120 * time.Second,
 	}
 
-	fmt.Println("Сервер запущен на http://localhost:8080")
+	// ловим сигналы для graceful shutdown
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
-	if err := srv.ListenAndServe(); err != nil {
-		panic(err)
+	go func() {
+		fmt.Println("Сервер запущен на http://localhost:8080")
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen: %v", err)
+		}
+	}()
+
+	<-ctx.Done()
+	log.Println("shutdown signal received")
+
+	// даем серверу 5 секунд на завершение текущих запросов
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Fatalf("server shutdown failed: %v", err)
 	}
+
+	if pgRepo != nil {
+		pgRepo.Close()
+	}
+
+	log.Println("server stopped")
 }
