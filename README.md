@@ -4,7 +4,7 @@
 
 ## Требования
 
-- Go 1.25+
+- Go 1.22+
 - Docker + Docker Compose (опционально, для PostgreSQL)
 - Make (опционально)
 
@@ -88,8 +88,15 @@ go run ./cmd/shortener -storage=postgres
 
 ```bash
 docker build -t urlshortener .
+docker run -p 8080:8080 urlshortener \
+-storage=memory
+```
+Или просто 
+```bash
+docker build -t urlshortener .
 docker run -p 8080:8080 urlshortener
 ```
+
 
 ### 4. Docker (PostgreSQL)
 
