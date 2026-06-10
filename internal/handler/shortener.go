@@ -22,12 +22,12 @@ func (h *ShortenerHandler) ShortenByOriginal(w http.ResponseWriter, r *http.Requ
 	var url shortenRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&url); err != nil {
-		http.Error(w, "bad json", http.StatusBadRequest)
+		writeErrorJSON(w, http.StatusBadRequest, "bad json")
 		return
 	}
 
 	if url.URL == "" {
-		http.Error(w, "url is required", http.StatusBadRequest)
+		writeErrorJSON(w, http.StatusBadRequest, "url is required")
 		return
 	}
 
@@ -49,7 +49,7 @@ func (h *ShortenerHandler) OriginalByShort(w http.ResponseWriter, r *http.Reques
 	short := r.PathValue("short")
 
 	if short == "" {
-		http.Error(w, "short is required", http.StatusBadRequest)
+		writeErrorJSON(w, http.StatusBadRequest, "short is required")
 		return
 	}
 
