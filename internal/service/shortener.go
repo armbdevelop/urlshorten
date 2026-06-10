@@ -8,9 +8,8 @@ import (
 	"github.com/armbdevelop/urlshorten/internal/storage"
 )
 
-
 type ShortenerService struct {
-    repo storage.Repository
+	repo storage.Repository
 }
 
 func NewShortenerService(repo storage.Repository) *ShortenerService {
@@ -19,15 +18,14 @@ func NewShortenerService(repo storage.Repository) *ShortenerService {
 
 func (s *ShortenerService) Shorten(ctx context.Context, originalURL string) (string, error) {
 	found, err := s.repo.GetByOriginal(ctx, originalURL)
-	
+
 	if err == nil {
 		return found.ShortURL, nil
 	}
 
 	if err != model.ErrNotFound {
-      return "", err 
-  	}
-
+		return "", err
+	}
 
 	shortUrl := ""
 
@@ -45,14 +43,13 @@ func (s *ShortenerService) Shorten(ctx context.Context, originalURL string) (str
 		if err != nil {
 			return "", err
 		}
-		// коллизия — пробуем заново, математически это никогда не случится :)
+		// коллизия — пробуем заново, вероятность крошечная но ненулевая
 	}
-
 
 	url := model.URL{
 		OriginalURL: originalURL,
-		ShortURL: shortUrl,
-		CreatedAt: time.Now(),
+		ShortURL:    shortUrl,
+		CreatedAt:   time.Now(),
 	}
 
 	err = s.repo.Save(ctx, url)
@@ -62,15 +59,13 @@ func (s *ShortenerService) Shorten(ctx context.Context, originalURL string) (str
 	}
 
 	return url.ShortURL, nil
-	
-}
 
+}
 
 func (s *ShortenerService) GetOriginal(ctx context.Context, shortURL string) (string, error) {
-    url, err := s.repo.GetByShort(ctx, shortURL)
-    if err != nil {
-        return "", err
-    }
-    return url.OriginalURL, nil
+	url, err := s.repo.GetByShort(ctx, shortURL)
+	if err != nil {
+		return "", err
+	}
+	return url.OriginalURL, nil
 }
-
