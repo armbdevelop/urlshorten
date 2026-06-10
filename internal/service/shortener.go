@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/armbdevelop/urlshorten/internal/model"
@@ -17,17 +18,14 @@ func NewShortenerService(repo storage.Repository) *ShortenerService {
 }
 
 func (s *ShortenerService) Shorten(ctx context.Context, originalURL string) (string, error) {
+	// может уже есть такой original
 	found, err := s.repo.GetByOriginal(ctx, originalURL)
-
 	if err == nil {
 		return found.ShortURL, nil
 	}
-
 	if err != model.ErrNotFound {
 		return "", err
 	}
-
-	shortUrl := ""
 
 	for {
 		short, err := generateShort()
@@ -35,31 +33,30 @@ func (s *ShortenerService) Shorten(ctx context.Context, originalURL string) (str
 			return "", err
 		}
 
-		_, err = s.repo.GetByShort(ctx, short)
-		if err == model.ErrNotFound {
-			shortUrl = short
-			break
+		url := model.URL{
+			OriginalURL: originalURL,
+			ShortURL:    short,
+			CreatedAt:   time.Now(),
 		}
-		if err != nil {
-			return "", err
+
+		// сразу сохраняем, не проверяя заранее
+		err = s.repo.Save(ctx, url)
+		if err == nil {
+			return short, nil
 		}
-		// коллизия — пробуем заново, вероятность крошечная но ненулевая
-	}
 
-	url := model.URL{
-		OriginalURL: originalURL,
-		ShortURL:    shortUrl,
-		CreatedAt:   time.Now(),
-	}
+		// если уже есть — проверяем, может это тот же original вставил другой поток
+		if errors.Is(err, model.ErrAlreadyExists) {
+			found, err = s.repo.GetByOriginal(ctx, originalURL)
+			if err == nil {
+				return found.ShortURL, nil
+			}
+			// не тот же original — значит коллизия short, пробуем заново
+			continue
+		}
 
-	err = s.repo.Save(ctx, url)
-
-	if err != nil {
 		return "", err
 	}
-
-	return url.ShortURL, nil
-
 }
 
 func (s *ShortenerService) GetOriginal(ctx context.Context, shortURL string) (string, error) {
