@@ -15,16 +15,16 @@ func NewShortHandler(service *service.ShortenerService) *ShortenerHandler {
 	return &ShortenerHandler{service: service}
 }
 
-func (h *ShortenerHandler) Shorten(w http.ResponseWriter, r *http.Request) {
+func (h *ShortenerHandler) ShortenByOriginal(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 
 	var url shortenRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&url); err != nil {
-        http.Error(w, "bad json", http.StatusBadRequest)
-        return
-    }
+		http.Error(w, "bad json", http.StatusBadRequest)
+		return
+	}
 
 	if url.URL == "" {
 		http.Error(w, "url is required", http.StatusBadRequest)
@@ -41,10 +41,10 @@ func (h *ShortenerHandler) Shorten(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, map[string]string{
 		"short": shortUrl,
 	})
-	
+
 }
 
-func (h *ShortenerHandler) Redirect(w http.ResponseWriter, r *http.Request) {
+func (h *ShortenerHandler) OriginalByShort(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	short := r.PathValue("short")
 
@@ -56,11 +56,12 @@ func (h *ShortenerHandler) Redirect(w http.ResponseWriter, r *http.Request) {
 	original, err := h.service.GetOriginal(ctx, short)
 
 	if err != nil {
-		handleServiceError(w,err)
+		handleServiceError(w, err)
 		return
 	}
 
-	w.Header().Set("Location", original)
-    w.WriteHeader(http.StatusFound)  // 302
+	writeJSON(w, http.StatusOK, map[string]string{
+		"original": original,
+	})
 
 }

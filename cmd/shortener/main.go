@@ -54,8 +54,8 @@ func main() {
 
 	// 4. Роутер
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /api/shorten", h.Shorten)
-	mux.HandleFunc("GET /{short}", h.Redirect)
+	mux.HandleFunc("POST /api/shorten", h.ShortenByOriginal)
+	mux.HandleFunc("GET /api/{short}", h.OriginalByShort)
 
 	appHandler := middelware.RequestID(middelware.Logger(middelware.Recovery(mux)))
 
@@ -69,7 +69,7 @@ func main() {
 	}
 
 	fmt.Println("Сервер запущен на http://localhost:8080")
-	
+
 	if err := srv.ListenAndServe(); err != nil {
 		panic(err)
 	}
